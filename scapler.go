@@ -9,7 +9,9 @@ import (
 	"time"
 
 	"github.com/CloudyKit/jet/v6"
+	"github.com/alexedwards/scs/v2"
 	"github.com/anfelo/scapler/render"
+	"github.com/anfelo/scapler/session"
 	"github.com/go-chi/chi/v5"
 	"github.com/joho/godotenv"
 )
@@ -26,12 +28,15 @@ type Scapler struct {
 	Routes   *chi.Mux
 	Render   *render.Render
 	JetViews *jet.Set
+	Session  *scs.SessionManager
 	config   config
 }
 
 type config struct {
-	port     string
-	renderer string
+	port        string
+	renderer    string
+	cookie      cookieConfig
+	sessionType string
 }
 
 func (s *Scapler) New(rootPath string) error {
@@ -68,7 +73,24 @@ func (s *Scapler) New(rootPath string) error {
 	s.config = config{
 		port:     os.Getenv("PORT"),
 		renderer: os.Getenv("RENDERER"),
+		cookie: cookieConfig{
+			name:     os.Getenv("COOKIE_NAME"),
+			lifetime: os.Getenv("COOKIE_LIFETIME"),
+			persist:  os.Getenv("COOKIE_PERSIST"),
+			secure:   os.Getenv("COOKIE_SECURE"),
+			domain:   os.Getenv("COOKIE_DOMAIN"),
+		},
+		sessionType: os.Getenv("SESSION_TYPE"),
 	}
+
+	sess := session.Session{
+		CookieLifetime: s.config.cookie.lifetime,
+		CookiePersist:  s.config.cookie.persist,
+		CookieName:     s.config.cookie.name,
+		SessionType:    s.config.sessionType,
+		CookieDomain:   s.config.cookie.domain,
+	}
+	s.Session = sess.InitSession()
 
 	var views = jet.NewSet(
 		jet.NewOSFileSystemLoader(fmt.Sprintf("%s/views", rootPath)),

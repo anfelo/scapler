@@ -15,6 +15,7 @@ func (s *Scapler) routes() http.Handler {
 		mux.Use(middleware.Logger)
 	}
 	mux.Use(middleware.Recoverer)
+	mux.Use(s.SessionLoad)
 
 	return mux
 }
