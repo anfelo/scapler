@@ -8,6 +8,8 @@ import (
 	"strconv"
 	"time"
 
+	"github.com/CloudyKit/jet/v6"
+	"github.com/anfelo/scapler/render"
 	"github.com/go-chi/chi/v5"
 	"github.com/joho/godotenv"
 )
@@ -22,6 +24,8 @@ type Scapler struct {
 	InfoLog  *log.Logger
 	RootPath string
 	Routes   *chi.Mux
+	Render   *render.Render
+	JetViews *jet.Set
 	config   config
 }
 
@@ -66,6 +70,14 @@ func (s *Scapler) New(rootPath string) error {
 		renderer: os.Getenv("RENDERER"),
 	}
 
+	var views = jet.NewSet(
+		jet.NewOSFileSystemLoader(fmt.Sprintf("%s/views", rootPath)),
+		jet.InDevelopmentMode(),
+	)
+	s.JetViews = views
+
+	s.createRenderer()
+
 	return nil
 }
 
@@ -84,7 +96,7 @@ func (s *Scapler) ListenAndServe() {
 	srv := &http.Server{
 		Addr:         fmt.Sprintf(":%s", os.Getenv("PORT")),
 		ErrorLog:     s.ErrorLog,
-		Handler:      s.routes(),
+		Handler:      s.Routes,
 		IdleTimeout:  30 * time.Second,
 		ReadTimeout:  30 * time.Second,
 		WriteTimeout: 600 * time.Second,
@@ -111,4 +123,14 @@ func (s *Scapler) startLoggers() (*log.Logger, *log.Logger) {
 	errorLog = log.New(os.Stdout, "ERROR\t", log.Ldate|log.Ltime|log.Lshortfile)
 
 	return infoLog, errorLog
+}
+
+func (s *Scapler) createRenderer() {
+	myRenderer := render.Render{
+		Renderer: s.config.renderer,
+		RootPath: s.RootPath,
+		Port:     s.config.port,
+		JetViews: s.JetViews,
+	}
+	s.Render = &myRenderer
 }
