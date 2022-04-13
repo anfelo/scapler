@@ -1,5 +1,7 @@
 package scapler
 
+import "database/sql"
+
 type initPaths struct {
 	rootPath    string
 	folderNames []string
@@ -11,4 +13,14 @@ type cookieConfig struct {
 	persist  string
 	secure   string
 	domain   string
+}
+
+type databaseConfig struct {
+	dns      string
+	database string
+}
+
+type Database struct {
+	DataType string
+	Pool     *sql.DB
 }

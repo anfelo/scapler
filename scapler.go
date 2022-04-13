@@ -29,6 +29,7 @@ type Scapler struct {
 	Render   *render.Render
 	JetViews *jet.Set
 	Session  *scs.SessionManager
+	DB       Database
 	config   config
 }
 
@@ -37,6 +38,7 @@ type config struct {
 	renderer    string
 	cookie      cookieConfig
 	sessionType string
+	database    databaseConfig
 }
 
 func (s *Scapler) New(rootPath string) error {
@@ -63,6 +65,19 @@ func (s *Scapler) New(rootPath string) error {
 	}
 
 	infoLog, errorLog := s.startLoggers()
+
+	if os.Getenv("DATABASE_TYPE") != "" {
+		db, err := s.OpenDB(os.Getenv("DATABASE_TYPE"), s.BuildDNS())
+		if err != nil {
+			errorLog.Println(err)
+			os.Exit(1)
+		}
+		s.DB = Database{
+			DataType: os.Getenv("DATABASE_TYPE"),
+			Pool:     db,
+		}
+	}
+
 	s.InfoLog = infoLog
 	s.ErrorLog = errorLog
 	s.Debug, _ = strconv.ParseBool(os.Getenv("DEBUG"))
@@ -81,6 +96,10 @@ func (s *Scapler) New(rootPath string) error {
 			domain:   os.Getenv("COOKIE_DOMAIN"),
 		},
 		sessionType: os.Getenv("SESSION_TYPE"),
+		database: databaseConfig{
+			database: os.Getenv("DATABASE_TYPE"),
+			dns:      s.BuildDNS(),
+		},
 	}
 
 	sess := session.Session{
@@ -124,6 +143,8 @@ func (s *Scapler) ListenAndServe() {
 		WriteTimeout: 600 * time.Second,
 	}
 
+	defer s.DB.Pool.Close()
+
 	s.InfoLog.Printf("Listening on port %s", os.Getenv("PORT"))
 	err := srv.ListenAndServe()
 	s.ErrorLog.Fatal(err)
@@ -155,4 +176,25 @@ func (s *Scapler) createRenderer() {
 		JetViews: s.JetViews,
 	}
 	s.Render = &myRenderer
+}
+
+func (s *Scapler) BuildDNS() string {
+	var dns string
+
+	switch os.Getenv("DATABASE_TYPE") {
+	case "postgres", "postgresql":
+		dns = fmt.Sprintf("host=%s port=%s user=%s dbname=%s sslmode=%s timezone=UTC connect_timeout=5",
+			os.Getenv("DATABASE_HOST"),
+			os.Getenv("DATABASE_PORT"),
+			os.Getenv("DATABASE_USER"),
+			os.Getenv("DATABASE_NAME"),
+			os.Getenv("DATABASE_SSL_MODE"),
+		)
+
+		if os.Getenv("DATABASE_PASS") != "" {
+			dns = fmt.Sprintf("%s password=%s", dns, os.Getenv("DATABASE_PASS"))
+		}
+	default:
+	}
+	return dns
 }
