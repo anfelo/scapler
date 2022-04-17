@@ -1,6 +1,23 @@
 package scapler
 
-import "os"
+import (
+	"crypto/rand"
+	"os"
+)
+
+const (
+	randomString = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0987654321_+"
+)
+
+func (s *Scapler) RandomString(n int) string {
+	st, r := make([]rune, n), []rune(randomString)
+	for i := range st {
+		p, _ := rand.Prime(rand.Reader, len(r))
+		x, y := p.Uint64(), uint64(len(r))
+		st[i] = r[x%y]
+	}
+	return string(st)
+}
 
 func (s *Scapler) CreateDirIfNotExists(path string) error {
 	const mode = 0755
