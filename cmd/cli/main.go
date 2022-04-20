@@ -59,7 +59,7 @@ func validateInput() (string, string, string, error) {
 			arg2 = os.Args[2]
 		}
 
-		if len(os.Args) >= 3 {
+		if len(os.Args) >= 4 {
 			arg3 = os.Args[3]
 		}
 	} else {
