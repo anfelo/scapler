@@ -19,18 +19,19 @@ import (
 const version = "1.0.0"
 
 type Scapler struct {
-	AppName  string
-	Debug    bool
-	Version  string
-	ErrorLog *log.Logger
-	InfoLog  *log.Logger
-	RootPath string
-	Routes   *chi.Mux
-	Render   *render.Render
-	JetViews *jet.Set
-	Session  *scs.SessionManager
-	DB       Database
-	config   config
+	AppName       string
+	Debug         bool
+	Version       string
+	ErrorLog      *log.Logger
+	InfoLog       *log.Logger
+	RootPath      string
+	Routes        *chi.Mux
+	Render        *render.Render
+	JetViews      *jet.Set
+	Session       *scs.SessionManager
+	DB            Database
+	config        config
+	EncryptionKey string
 }
 
 type config struct {
@@ -111,6 +112,7 @@ func (s *Scapler) New(rootPath string) error {
 		DBPool:         s.DB.Pool,
 	}
 	s.Session = sess.InitSession()
+	s.EncryptionKey = os.Getenv("KEY")
 
 	var views = jet.NewSet(
 		jet.NewOSFileSystemLoader(fmt.Sprintf("%s/views", rootPath)),
