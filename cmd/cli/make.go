@@ -83,6 +83,9 @@ func doMake(arg2, arg3 string) error {
 		}
 
 		fileName := scap.RootPath + "/data/" + strings.ToLower(modelName) + ".go"
+		if fileExists(fileName) {
+			exitGracefully(errors.New(fileName + " already exists!"))
+		}
 
 		model = strings.ReplaceAll(model, "$MODELNAME$", strcase.ToCamel(modelName))
 		model = strings.ReplaceAll(model, "$TABLENAME$", strcase.ToCamel(tableName))
@@ -91,7 +94,11 @@ func doMake(arg2, arg3 string) error {
 		if err != nil {
 			exitGracefully(err)
 		}
-
+	case "session":
+		err := doSessionTable()
+		if err != nil {
+			exitGracefully(err)
+		}
 	}
 
 	return nil

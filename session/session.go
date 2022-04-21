@@ -1,11 +1,14 @@
 package session
 
 import (
+	"database/sql"
 	"net/http"
 	"strconv"
 	"strings"
 	"time"
 
+	"github.com/alexedwards/scs/mysqlstore"
+	"github.com/alexedwards/scs/postgresstore"
 	"github.com/alexedwards/scs/v2"
 )
 
@@ -16,6 +19,7 @@ type Session struct {
 	CookieDomain   string
 	SessionType    string
 	CookieSecure   string
+	DBPool         *sql.DB
 }
 
 func (s *Session) InitSession() *scs.SessionManager {
@@ -49,7 +53,9 @@ func (s *Session) InitSession() *scs.SessionManager {
 	switch strings.ToLower(s.SessionType) {
 	case "redis":
 	case "mysql", "mariadb":
+		session.Store = mysqlstore.New(s.DBPool)
 	case "postgres", "postgresql":
+		session.Store = postgresstore.New(s.DBPool)
 	default:
 	}
 
